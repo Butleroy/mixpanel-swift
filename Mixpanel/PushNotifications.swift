@@ -15,6 +15,7 @@ public class MixpanelPushNotifications {
     }
 
     @available(iOSApplicationExtension, unavailable)
+    @available(macCatalystApplicationExtension, unavailable)
     public static func handleResponse(response: UNNotificationResponse,
            withCompletionHandler completionHandler:
              @escaping () -> Void) {
