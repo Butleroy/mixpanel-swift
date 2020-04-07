@@ -255,7 +255,9 @@ open class MixpanelInstance: CustomDebugStringConvertible, FlushDelegate, AEDele
     let readWriteLock: ReadWriteLock
     #if os(iOS)
     static let reachability = SCNetworkReachabilityCreateWithName(nil, "api.mixpanel.com")
+        #if !targetEnvironment(macCatalyst)
     static let telephonyInfo = CTTelephonyNetworkInfo()
+        #endif
     #endif
     #if !os(OSX) && !WATCH_OS
     var taskId = UIBackgroundTaskIdentifier.invalid
@@ -387,10 +389,12 @@ open class MixpanelInstance: CustomDebugStringConvertible, FlushDelegate, AEDele
         trackIntegration()
         #if os(iOS)
             setCurrentRadio()
+            #if !targetEnvironment(macCatalyst)
             notificationCenter.addObserver(self,
                                            selector: #selector(setCurrentRadio),
                                            name: .CTRadioAccessTechnologyDidChange,
                                            object: nil)
+            #endif
             #if DECIDE
                 notificationCenter.addObserver(self,
                                                selector: #selector(executeTweaks),
@@ -663,7 +667,11 @@ open class MixpanelInstance: CustomDebugStringConvertible, FlushDelegate, AEDele
     }
     #if os(iOS)
     @objc func setCurrentRadio() {
+        #if targetEnvironment(macCatalyst)
+        var radio = "None"
+        #else
         var radio = MixpanelInstance.telephonyInfo.currentRadioAccessTechnology ?? "None"
+        #endif
         let prefix = "CTRadioAccessTechnology"
         if radio.hasPrefix(prefix) {
             radio = (radio as NSString).substring(from: prefix.count)
@@ -676,12 +684,16 @@ open class MixpanelInstance: CustomDebugStringConvertible, FlushDelegate, AEDele
                     return
                 }
 
+                #if targetEnvironment(macCatalyst)
+                AutomaticProperties.properties["$carrier"] = ""
+                #else
                 if let carrierName = MixpanelInstance.telephonyInfo.subscriberCellularProvider?.carrierName {
                     AutomaticProperties.properties["$carrier"] = carrierName
 
                 } else {
                     AutomaticProperties.properties["$carrier"] = ""
                 }
+                #endif
             }
         }
     }
